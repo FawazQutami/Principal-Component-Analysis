@@ -1,3 +1,5 @@
+# File name: PCA.py
+
 import numpy as np
 from sklearn import datasets
 import matplotlib.pyplot as plt
@@ -84,6 +86,42 @@ class PCA:
         return np.dot(X, self.components.T)
 
 
+def plot_pca(pca_x, y):
+    # Check https://peekaboo-vision.blogspot.com/2012/10/animating-random-projections-of-high.html
+
+    from matplotlib.animation import FuncAnimation
+
+    fig = plt.figure()
+
+    n_iter = 200
+
+    global points
+    points = [plt.plot([], [], 'o', color=['r', 'g', 'b', 'y', 'lightblue'][i])[0] for i in np.unique(y)]
+
+    def init():
+        for p in points:
+            p.set_data([], [])
+        plt.xlim((-4, 4))
+        plt.ylim((-3, 3))
+        plt.xticks(())
+        plt.yticks(())
+        return points
+
+    def animate(i):
+        alpha = 2 * np.pi * i / n_iter
+        beta = 4 * np.pi * i / n_iter
+        interpolation1 = np.cos(alpha) * pca_x[:, 0] + np.sin(alpha) * pca_x[:, 2]
+        interpolation2 = np.cos(beta) * pca_x[:, 1] + np.sin(beta) * pca_x[:, 3]
+        for p, c in zip(points, np.unique(y)):
+            p.set_data(interpolation1[y == c], interpolation2[y == c])
+        return points
+
+    anim = FuncAnimation(fig, animate, frames=n_iter, interval=100, blit=True,
+                         init_func=init)
+    # anim.save("iris.mp4", fps=20, extra_args=['-vcodec', 'libx264'])
+    plt.show()
+
+
 if __name__ == '__main__':
     # data = datasets.load_digits()
     data = datasets.load_iris()
@@ -91,21 +129,36 @@ if __name__ == '__main__':
     y = data.target
 
     # Project the data onto the 2 primary principal components
-    pca = PCA(2)
+    pca = PCA(4)
     pca.fit(X)
     X_projected = pca.transform(X)
+
+    plot_pca(X_projected, y)
 
     print('Shape of X:', X.shape)
     print('Shape of transformed X:', X_projected.shape)
 
     x1 = X_projected[:, 0]
     x2 = X_projected[:, 1]
+    x3 = X_projected[:, 2]
+    x4 = X_projected[:, 3]
 
     plt.scatter(x1, x2,
-                c=y, edgecolor='none', alpha=0.8,
-                cmap=plt.cm.get_cmap('viridis', 3))
+                c=y
+                , edgecolor='r'
+                , marker='o'
+                , s=50
+                , cmap=plt.cm.get_cmap('viridis', 3)
+                , label='PC 1 vs 2')
+    plt.scatter(x3, x4,
+                c=y
+                , edgecolor='black'
+                , marker='s'
+                , s=50
+                , cmap=plt.cm.get_cmap('Spectral', 3)
+                , label='PC 3 vs 4')
 
-    plt.xlabel('Principal Component 1')
-    plt.ylabel('Principal Component 2')
-    plt.colorbar()
+    plt.xlabel('Principal Component 1 and 3')
+    plt.ylabel('Principal Component 2 and 4')
+    plt.legend()
     plt.show()
